@@ -1,0 +1,2090 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" href="icon-192.png" sizes="192x192">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="icon" type="image/png" href="icon-512.png" sizes="512x512">
+  <!-- Tema para dispositivos móveis -->
+  <meta name="theme-color" content="#E65100">
+<!--   <meta name="theme-color" content="#1e88e5">   -->
+  <title>Rastreador de Estatísticas de Basquete</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" integrity="sha384-k6RqeWeci5ZR/Lv4MR0sA0FfDOM8d7x1z5l5e5c5e5e5e5e5e5e5e5e5e5e5e5" crossorigin="anonymous">
+  <head>
+  <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: Arial, sans-serif;
+      }
+      
+      body {
+        background-color: #f5f5f5;
+        padding: 10px;
+      }
+      
+      .container {
+        max-width: 1000px;
+        margin: 0 auto;
+      }
+      
+      h1 {
+        text-align: center;
+        margin-bottom: 15px;
+        color: #333;
+        font-size: 20px;
+      }
+      
+      /* Layout principal em grid */
+      .main-grid {
+        display: grid;
+        grid-template-columns: 150px 1fr;
+        grid-gap: 10px;
+      }
+      
+      /* Lista de jogadores (lateral esquerda) */
+      .player-list-container {
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        padding: 10px;
+        max-height: 400px;
+        overflow-y: auto;
+      }
+      
+      .player-list-title {
+        font-weight: bold;
+        margin-bottom: 10px;
+        text-align: center;
+        font-size: 14px;
+        padding-bottom: 5px;
+        border-bottom: 1px solid #eee;
+      }
+      
+      .player-item {
+        padding: 8px;
+        border-bottom: 1px solid #eee;
+        cursor: pointer;
+        font-size: 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      
+      .player-item:hover {
+        background-color: #f9f9f9;
+      }
+      
+      .player-item.selected {
+        background-color: #e3f2fd;
+      }
+      
+      .player-info-text {
+        flex: 1;
+      }
+      
+      .player-actions {
+        display: flex;
+        gap: 5px;
+      }
+      
+      .player-edit-btn, .player-delete-btn {
+        background: none;
+        border: none;
+        padding: 2px;
+        margin: 0;
+        cursor: pointer;
+        font-size: 12px;
+        width: auto;
+      }
+      
+      .player-edit-btn {
+        color: #2196f3;
+      }
+      
+      .player-delete-btn {
+        color: #f44336;
+      }
+      
+      /* Estatísticas compactas do jogador */
+      .stats-compact {
+        display: flex;
+        flex-direction: column;
+        background-color: white;
+        padding: 10px;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        margin-bottom: 10px;
+      }
+      
+      .player-info {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 5px;
+      }
+      
+      .player-name {
+        font-weight: bold;
+      }
+      
+      .player-stats {
+        display: flex;
+        gap: 10px;
+        font-size: 14px;
+      }
+      
+      /* Quadra de basquete */
+      .court-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      
+      .court {
+        width: 100%;
+        max-width: 450px;
+        aspect-ratio: 4 / 3;
+        position: relative;
+        border: 2px solid #8b4513;
+        border-radius: 8px;
+        background-color: #deb887;
+        overflow: hidden;
+      }
+  
+      .half-court {
+        width: 100%;
+        height: 100%;
+        position: relative;
+      }
+      
+      #court-canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 1;
+      }
+      
+      .shot-dot {
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 20;
+      }
+      
+      .shot-made-two {
+        background-color: #4caf50;
+      }
+      
+      .shot-made-three {
+        background-color: #2196f3;
+      }
+      
+      .shot-missed {
+        background-color: #f44336;
+        border: 1px solid #fff;
+      }
+      
+      /* Estatísticas rápidas (abaixo da quadra) */
+      .quick-stats {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 5px;
+        margin-top: 10px;
+        width: 100%;
+        max-width: 450px;
+      }
+      
+      .quick-stats button {
+        padding: 10px 5px;
+        border: none;
+        border-radius: 5px;
+        color: white;
+        font-weight: bold;
+        font-size: 12px;
+      }
+      
+      /* Botão de menu flutuante */
+      .menu-button {
+        position: fixed;
+        bottom: 15px;
+        right: 15px;
+        width: 50px;
+        height: 50px;
+        background-color: #1e88e5;
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        font-size: 24px;
+        z-index: 100;
+      }
+      
+      /* Menu oculto de configurações */
+      .menu-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.7);
+        z-index: 1000;
+        display: none;
+      }
+      
+      .menu-content {
+        position: absolute;
+        bottom: 0;
+        width: 100%;
+        background-color: white;
+        border-radius: 15px 15px 0 0;
+        padding: 20px;
+        max-height: 80%;
+        overflow-y: auto;
+      }
+      
+      .menu-section {
+        margin-bottom: 15px;
+      }
+      
+      .menu-title {
+        font-weight: bold;
+        margin-bottom: 10px;
+        padding-bottom: 5px;
+        border-bottom: 1px solid #eee;
+      }
+      
+      .menu-close {
+        text-align: center;
+        padding: 10px;
+        background-color: #f5f5f5;
+        border-radius: 10px;
+        margin-top: 15px;
+        font-weight: bold;
+      }
+      
+      /* Modal para confirmação de arremesso */
+      .shot-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.7);
+        z-index: 1000;
+        display: none;
+        justify-content: center;
+        align-items: center;
+      }
+      
+      .shot-modal-content {
+        background-color: white;
+        border-radius: 10px;
+        padding: 20px;
+        width: 90%;
+        max-width: 300px;
+        text-align: center;
+      }
+      
+      .shot-type-title {
+        font-size: 16px;
+        font-weight: bold;
+        margin-bottom: 15px;
+      }
+      
+      .shot-modal-buttons {
+        display: flex;
+        gap: 10px;
+        margin-top: 20px;
+      }
+      
+      .shot-modal-buttons button {
+        flex: 1;
+        padding: 12px;
+        border: none;
+        border-radius: 5px;
+        color: white;
+        font-weight: bold;
+      }
+      
+      /* Estilos para formulários no menu */
+      input, select, button {
+        padding: 8px;
+        margin-bottom: 8px;
+        width: 100%;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+      
+      button {
+        background-color: #1e88e5;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-weight: bold;
+        transition: background-color 0.3s;
+      }
+      
+      button:hover {
+        background-color: #1565c0;
+      }
+      
+      .shot-type-indicator {
+        text-align: center;
+        margin-bottom: 5px;
+        font-size: 14px;
+        height: 20px;
+      }
+      
+      /* Soma total de pontos */
+      .total-points {
+        background-color: #ffd54f;
+        color: #333;
+        border-radius: 5px;
+        padding: 8px;
+        text-align: center;
+        font-weight: bold;
+        margin-top: 10px;
+        max-width: 450px;
+        width: 100%;
+        font-size: 16px;
+      }
+      
+      /* Estatísticas detalhadas */
+      .detailed-stats {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 5px;
+        margin-top: 10px;
+        max-width: 450px;
+        width: 100%;
+        background-color: white;
+        border-radius: 5px;
+        padding: 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      }
+      
+      .stat-item {
+        text-align: center;
+        font-size: 12px;
+      }
+      
+      .stat-value {
+        font-weight: bold;
+        font-size: 14px;
+      }
+      
+      /* Modal de estatísticas avançadas */
+      .stats-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.7);
+        z-index: 1000;
+        display: none;
+        justify-content: center;
+        align-items: center;
+        overflow-y: auto;
+      }
+      
+      .stats-modal-content {
+        background-color: white;
+        border-radius: 10px;
+        padding: 20px;
+        width: 95%;
+        max-width: 600px;
+        max-height: 80%;
+        overflow-y: auto;
+      }
+      
+      .stats-modal-title {
+        font-size: 18px;
+        font-weight: bold;
+        margin-bottom: 15px;
+        text-align: center;
+      }
+      
+      .stats-tabs {
+        display: flex;
+        gap: 5px;
+        margin-bottom: 15px;
+      }
+      
+      .stats-tab {
+        flex: 1;
+        text-align: center;
+        padding: 8px;
+        background-color: #f5f5f5;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+      
+      .stats-tab.active {
+        background-color: #1e88e5;
+        color: white;
+      }
+      
+      .stats-section {
+        margin-bottom: 15px;
+      }
+      
+      .stats-section-title {
+        font-weight: bold;
+        margin-bottom: 10px;
+        padding-bottom: 5px;
+        border-bottom: 1px solid #eee;
+      }
+      
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+      }
+      
+      .stats-card {
+        background-color: #f5f5f5;
+        border-radius: 5px;
+        padding: 10px;
+        text-align: center;
+      }
+      
+      .stats-card-title {
+        font-size: 12px;
+        color: #555;
+      }
+      
+      .stats-card-value {
+        font-size: 18px;
+        font-weight: bold;
+      }
+      
+      .stats-graph {
+        height: 200px;
+        margin-top: 15px;
+        background-color: #f5f5f5;
+        border-radius: 5px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      
+      .stats-modal-close {
+        text-align: center;
+        padding: 10px;
+        background-color: #f5f5f5;
+        border-radius: 10px;
+        margin-top: 15px;
+        font-weight: bold;
+        cursor: pointer;
+      }
+      
+      /* Botão para abrir estatísticas avançadas */
+      .show-advanced-stats {
+        background-color: #5e35b1;
+        margin-top: 10px;
+        max-width: 450px;
+        width: 100%;
+      }
+      
+      /* Add Player Form */
+      .add-player-form {
+        margin-top: 15px;
+        padding-top: 10px;
+        border-top: 1px dashed #ccc;
+      }
+
+      .modal-cancel {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.7);
+        z-index: 1000;
+        display: none;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .modal-cancel-content {
+        background-color: white;
+        border-radius: 10px;
+        padding: 20px;
+        width: 90%;
+        max-width: 300px;
+        text-align: center;
+      }
+
+      .modal-cancel-title {
+        font-size: 18px;
+        font-weight: bold;
+        margin-bottom: 20px;
+      }
+
+      .cancel-options {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-bottom: 20px;
+      }
+
+      .cancel-options button {
+        padding: 12px;
+        border: none;
+        border-radius: 5px;
+        color: white;
+        font-weight: bold;
+        cursor: pointer;
+      }
+
+      .modal-cancel-close {
+        text-align: center;
+        padding: 10px;
+        background-color: #f5f5f5;
+        border-radius: 10px;
+        font-weight: bold;
+        cursor: pointer;
+      }
+
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Rastreador de Estatísticas de Basquete</h1>
+      
+      <div class="main-grid">
+        <!-- Lista de Jogadores (Lateral Esquerda) -->
+        <div class="player-list-container">
+          <div class="player-list-title">JOGADORES</div>
+          <div id="player-list">
+            <!-- Lista de jogadores será preenchida via JavaScript -->
+          </div>
+          
+          <div class="add-player-form">
+            <input type="text" id="player-name" placeholder="Nome">
+            <input type="number" id="player-number" placeholder="Número">
+            <select id="player-position">
+              <option value="PG">Armador (PG)</option>
+              <option value="SG">Ala-armador (SG)</option>
+              <option value="SF">Ala (SF)</option>
+              <option value="PF">Ala-pivô (PF)</option>
+              <option value="C">Pivô (C)</option>
+            </select>
+            <button id="add-player-btn" style="background-color: #4caf50;">Adicionar</button>
+          </div>
+        </div>
+        
+        <!-- Quadra e Estatísticas (Lado Direito) -->
+        <div class="game-container">
+          <!-- Estatísticas do Jogador -->
+          <div class="stats-compact">
+            <div class="player-info">
+              <span class="player-name"><span id="stats-player-name">Jogador</span> #<span id="stats-player-number">0</span></span>
+            </div>
+            <div class="player-stats">
+              <span>PTS: <strong id="stats-points">0</strong></span>
+              <span>REB: <strong id="stats-rebounds">0</strong></span>
+              <span>AST: <strong id="stats-assists">0</strong></span>
+              <span>TRN: <strong id="stats-turnovers">0</strong></span>
+              <button id="undo-shot" style="width: auto; padding: 2px 5px; margin: 0; font-size: 12px; background-color: #999;">Cancelar</button>
+            </div>
+          </div>
+          
+          <!-- Quadra de Basquete -->
+          <div class="court-container">
+            <div class="shot-type-indicator" id="shot-type">Selecione onde o arremesso foi realizado</div>
+            
+            <div class="court" id="court">
+              <div class="half-court">
+                <!-- Canvas será adicionado aqui via JavaScript -->
+              </div>
+            </div>
+            
+            <!-- Total de Pontos -->
+            <div class="total-points">
+              TOTAL DE PONTOS: <span id="team-total-points">0</span>
+            </div>
+            
+            <!-- Estatísticas Detalhadas -->
+            <div class="detailed-stats">
+              <div class="stat-item">
+                <div>3PT CERTOS</div>
+                <div class="stat-value" id="stats-3pt-made">0</div>
+              </div>
+              <div class="stat-item">
+                <div>2PT CERTOS</div>
+                <div class="stat-value" id="stats-2pt-made">0</div>
+              </div>
+              <div class="stat-item">
+                <div>LLs CERTOS</div>
+                <div class="stat-value" id="stats-1pt-made">0</div>
+              </div>
+              <div class="stat-item">
+                <div>3PT ERRADOS</div>
+                <div class="stat-value" id="stats-3pt-missed">0</div>
+              </div>
+              <div class="stat-item">
+                <div>2PT ERRADOS</div>
+                <div class="stat-value" id="stats-2pt-missed">0</div>
+              </div>
+              <div class="stat-item">
+                <div>LLs ERRADOS</div>
+                <div class="stat-value" id="stats-1pt-missed">0</div>
+              </div>
+            </div>
+            
+            <button class="show-advanced-stats" id="show-advanced-stats">VER ESTATÍSTICAS AVANÇADAS</button>
+            
+            <!-- Estatísticas Rápidas -->
+            <div class="quick-stats">
+              <button class="stat-btn" data-stat="rebounds" style="background-color: #4caf50;">+ Rebote</button>
+              <button class="stat-btn" data-stat="assists" style="background-color: #2196f3;">+ Assistência</button>
+              <button class="stat-btn" data-stat="turnovers" style="background-color: #f44336;">+ Turnover</button>
+              <button class="stat-btn" data-stat="points" data-value="1" style="background-color: #ff9800;">+ Lance Livre</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Botão flutuante de menu -->
+    <div class="menu-button" id="menu-button">⚙️</div>
+    
+    <!-- Menu oculto de configurações -->
+    <div class="menu-container" id="menu-container">
+      <div class="menu-content">
+        <div class="menu-section">
+          <div class="menu-title">Gerenciamento de Dados</div>
+          <button id="export-json" style="background-color: #6a1b9a;">Exportar JSON</button>
+          <button id="export-csv" style="background-color: #00897b;">Exportar CSV</button>
+          <button id="toggle-heatmap" style="background-color: #ff6f00;">Ver Heatmap</button>
+          <button id="replay-shots" style="background-color: #455a64;">Rever Arremessos</button>
+          <button id="clear-stats" style="background-color: #d32f2f; margin-top: 15px;">Limpar Estatísticas</button>
+          <button id="clear-all" style="background-color: #b71c1c;">Limpar Tudo</button>
+        </div>
+        
+        <div class="menu-close" id="menu-close">Fechar</div>
+      </div>
+    </div>
+    
+    <!-- Modal para confirmação de arremesso -->
+    <div class="shot-modal" id="shot-modal">
+      <div class="shot-modal-content">
+        <div class="shot-type-title" id="modal-shot-type">Arremesso de 2 pontos</div>
+        
+        <div class="shot-modal-buttons">
+          <button id="shot-made" style="background-color: #4caf50;">Acertou</button>
+          <button id="shot-missed" style="background-color: #f44336;">Errou</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Modal para estatísticas avançadas -->
+    <div class="stats-modal" id="stats-modal">
+      <div class="stats-modal-content">
+        <div class="stats-modal-title">Estatísticas Avançadas</div>
+        
+        <div class="stats-tabs">
+          <div class="stats-tab active" id="tab-player">Jogador</div>
+          <div class="stats-tab" id="tab-team">Equipe</div>
+        </div>
+        
+        <div class="stats-section" id="player-stats-section">
+          <div class="stats-section-title">Estatísticas do Jogador: <span id="modal-player-name">Jogador</span></div>
+          
+          <div class="stats-grid">
+            <div class="stats-card">
+              <div class="stats-card-title">3PT</div>
+              <div class="stats-card-value"><span id="modal-player-3pt">0/0</span> (<span id="modal-player-3pt-pct">0%</span>)</div>
+            </div>
+            <div class="stats-card">
+              <div class="stats-card-title">2PT</div>
+              <div class="stats-card-value"><span id="modal-player-2pt">0/0</span> (<span id="modal-player-2pt-pct">0%</span>)</div>
+            </div>
+            <div class="stats-card">
+              <div class="stats-card-title">Lance Livre</div>
+              <div class="stats-card-value"><span id="modal-player-1pt">0/0</span> (<span id="modal-player-1pt-pct">0%</span>)</div>
+            </div>
+            <div class="stats-card">
+              <div class="stats-card-title">Pontos Totais</div>
+              <div class="stats-card-value" id="modal-player-points">0</div>
+            </div>
+            <div class="stats-card">
+              <div class="stats-card-title">Rebotes</div>
+              <div class="stats-card-value" id="modal-player-rebounds">0</div>
+            </div>
+            <div class="stats-card">
+              <div class="stats-card-title">Assistências</div>
+              <div class="stats-card-value" id="modal-player-assists">0</div>
+            </div>
+          </div>
+          
+          <div class="stats-section-title">Gráfico de Eficiência</div>
+          <div class="stats-graph" id="player-efficiency-graph">
+            Gráfico será gerado aqui
+          </div>
+        </div>
+        
+        <div class="stats-section" id="team-stats-section" style="display: none;">
+          <div class="stats-section-title">Estatísticas da Equipe</div>
+          
+          <div class="stats-grid">
+            <div class="stats-card">
+              <div class="stats-card-title">3PT</div>
+              <div class="stats-card-value"><span id="modal-team-3pt">0/0</span> (<span id="modal-team-3pt-pct">0%</span>)</div>
+            </div>
+            <div class="stats-card">
+              <div class="stats-card-title">2PT</div>
+              <div class="stats-card-value"><span id="modal-team-2pt">0/0</span> (<span id="modal-team-2pt-pct">0%</span>)</div>
+            </div>
+            <div class="stats-card">
+              <div class="stats-card-title">Lance Livre</div>
+              <div class="stats-card-value"><span id="modal-team-1pt">0/0</span> (<span id="modal-team-1pt-pct">0%</span>)</div>
+            </div>
+            <div class="stats-card">
+              <div class="stats-card-title">Pontos Totais</div>
+              <div class="stats-card-value" id="modal-team-points">0</div>
+            </div>
+            <div class="stats-card">
+              <div class="stats-card-title">Rebotes</div>
+              <div class="stats-card-value" id="modal-team-rebounds">0</div>
+            </div>
+            <div class="stats-card">
+              <div class="stats-card-title">Assistências</div>
+              <div class="stats-card-value" id="modal-team-assists">0</div>
+            </div>
+          </div>
+          
+          <div class="stats-section-title">Contribuição de Pontos por Jogador</div>
+          <div class="stats-graph" id="team-points-graph">
+            Gráfico será gerado aqui
+          </div>
+        </div>
+        
+        <div class="stats-modal-close" id="stats-modal-close">Fechar</div>
+      </div>
+    </div>
+
+    <div class="modal-cancel" id="modal-cancel" style="display: none;">
+      <div class="modal-cancel-content">
+        <div class="modal-cancel-title">O que deseja cancelar?</div>
+        
+        <div class="cancel-options">
+          <button id="cancel-shot" style="background-color: #ff9800;">Último Arremesso</button>
+          <button id="cancel-rebound" style="background-color: #4caf50;">Último Rebote</button>
+          <button id="cancel-assist" style="background-color: #2196f3;">Última Assistência</button>
+          <button id="cancel-turnover" style="background-color: #f44336;">Último Turnover</button>
+          <button id="cancel-freethrow" style="background-color: #ff5722;">Último Lance Livre</button>
+        </div>
+        
+        <div class="modal-cancel-close">Fechar</div>
+      </div>
+    </div>
+
+    <script>
+      // Classes JavaScript para gerenciamento de dados
+      class Player {
+        constructor(id, name, number, position) {
+          this.id = id;
+          this.name = name;
+          this.number = number;
+          this.position = position;
+          this.stats = {
+            points: 0,
+            rebounds: 0,
+            assists: 0,
+            turnovers: 0,
+            // Estatísticas detalhadas
+            threePointsMade: 0,
+            threePointsAttempted: 0,
+            twoPointsMade: 0,
+            twoPointsAttempted: 0,
+            freeThrowsMade: 0,
+            freeThrowsAttempted: 0
+          };
+        }
+        
+        // Getters para calcular porcentagens
+        getThreePointPercentage() {
+          if (this.stats.threePointsAttempted === 0) return 0;
+          return Math.round((this.stats.threePointsMade / this.stats.threePointsAttempted) * 100);
+        }
+        
+        getTwoPointPercentage() {
+          if (this.stats.twoPointsAttempted === 0) return 0;
+          return Math.round((this.stats.twoPointsMade / this.stats.twoPointsAttempted) * 100);
+        }
+        
+        getFreeThrowPercentage() {
+          if (this.stats.freeThrowsAttempted === 0) return 0;
+          return Math.round((this.stats.freeThrowsMade / this.stats.freeThrowsAttempted) * 100);
+        }
+      }
+      
+      class Shot {
+        constructor(id, playerId, x, y, made, value) {
+          this.id = id;
+          this.playerId = playerId;
+          this.x = x;
+          this.y = y;
+          this.made = made;
+          this.value = value;
+        }
+      }
+      
+      class BasketballStatsTracker {
+        constructor() {
+          this.players = [];
+          this.shots = [];
+          this.selectedPlayerId = null;
+          this.nextPlayerId = 1;
+          this.nextShotId = 1;
+          this.showingHeatmap = false;
+          
+          // Tentar carregar dados do localStorage
+          this.loadFromLocalStorage();
+          
+          // Se não houver jogadores salvos, adicionar um padrão
+          if (this.players.length === 0) {
+            this.players.push(new Player(this.nextPlayerId++, 'JOGADOR 1', 7, 'PG'));
+            this.selectedPlayerId = 1;
+          }
+          
+          // Inicializar o canvas da quadra de basquete
+          this.initCourt();
+          
+          this.initEventListeners();
+          this.updatePlayerList();
+          this.updatePlayerStats();
+          this.updateTeamTotalPoints();
+        }
+        
+        // Métodos para salvar e carregar dados no localStorage
+        saveToLocalStorage() {
+          const data = {
+            players: this.players,
+            shots: this.shots,
+            nextPlayerId: this.nextPlayerId,
+            nextShotId: this.nextShotId,
+            selectedPlayerId: this.selectedPlayerId
+          };
+          
+          localStorage.setItem('basketballStats', JSON.stringify(data));
+        }
+        
+        loadFromLocalStorage() {
+          const savedData = localStorage.getItem('basketballStats');
+          
+          if (savedData) {
+            const data = JSON.parse(savedData);
+            this.players = data.players;
+            this.shots = data.shots;
+            this.nextPlayerId = data.nextPlayerId || 1;
+            this.nextShotId = data.nextShotId || 1;
+            this.selectedPlayerId = data.selectedPlayerId || (this.players.length > 0 ? this.players[0].id : null);
+          }
+        }
+        
+        // Inicializa o canvas e desenha a quadra
+        initCourt() {
+          const court = document.getElementById('court');
+          
+          // Criar o canvas e adicioná-lo à quadra
+          const canvas = document.createElement('canvas');
+          canvas.id = 'court-canvas';
+  
+          const updateCanvasSize = () => {
+            const width = court.clientWidth;
+            const height = width * 0.75; // 4:3 proporcional
+            canvas.width = width;
+            canvas.height = height;
+            canvas.style.height = height + "px";
+            this.drawCourt(canvas);
+            this.updateShotDisplay();
+          };
+  
+          updateCanvasSize();
+          window.addEventListener("resize", updateCanvasSize);
+  
+          court.querySelector('.half-court').appendChild(canvas);
+          
+          // Desenhar a quadra no canvas
+          this.drawCourt(canvas);
+        }
+        
+        // Desenha a quadra de basquete no canvas
+        drawCourt(canvas) {
+          const ctx = canvas.getContext('2d');
+          const width = canvas.width;
+          const height = canvas.height;
+          
+          // Limpar o canvas
+          ctx.clearRect(0, 0, width, height);
+          
+          // Definir cores e espessuras
+          ctx.strokeStyle = '#FFFFFF';
+          ctx.lineWidth = 2;
+          
+          // Garrafão
+          const paintWidth = width * 0.3; // 30% da largura
+          const paintHeight = height * 0.4; // 40% da altura
+          ctx.strokeRect(width/2 - paintWidth/2, height - paintHeight, paintWidth, paintHeight);
+          
+          // Linha de lance livre
+          ctx.beginPath();
+          ctx.moveTo(width/2 - paintWidth/2, height - paintHeight);
+          ctx.lineTo(width/2 + paintWidth/2, height - paintHeight);
+          ctx.stroke();
+          
+          // Círculo de lance livre
+          ctx.beginPath();
+          ctx.arc(width/2, height - paintHeight, paintWidth/2, Math.PI, 0);
+          ctx.stroke();
+          
+          // Tabela
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.moveTo(width/2 - width*0.075, height - 1);
+          ctx.lineTo(width/2 + width*0.075, height - 1);
+          ctx.stroke();
+          
+          // Aro (círculo amarelo)
+          ctx.fillStyle = '#C7E712';
+          ctx.beginPath();
+          ctx.arc(width/2, height - 10, 10, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#FF5722';
+          ctx.stroke();
+          
+          // Linha de 3 pontos
+          ctx.strokeStyle = '#FFFFFF';
+          ctx.lineWidth = 3;
+          
+          // Desenhar um arco perfeito para a linha de 3 pontos
+          const threePointRadius = width * 0.44; // 44% da largura
+          ctx.beginPath();
+          ctx.arc(width/2, height - 10, threePointRadius, Math.PI, 0);
+          ctx.stroke();
+          
+          // Se o heatmap estiver ativo, desenhar
+          if (this.showingHeatmap) {
+            this.renderHeatmap(ctx);
+          }
+        }
+        
+        renderHeatmap(ctx) {
+          const canvas = document.getElementById('court-canvas');
+          const width = canvas.width;
+          const height = canvas.height;
+  
+          // Verificar se há um jogador selecionado
+          if (!this.selectedPlayerId) {
+            console.warn("Nenhum jogador selecionado para renderizar o heatmap");
+            return;
+          }
+  
+          // Filtro por jogador selecionado - APENAS ARREMESSOS CONVERTIDOS
+          const relevantShots = this.shots.filter(s => 
+            s.playerId === this.selectedPlayerId && s.made === true
+          );
+          
+          // Se não houver arremessos convertidos, não desenhar o heatmap
+          if (relevantShots.length === 0) {
+            console.log("Nenhum arremesso convertido registrado para este jogador");
+            // Mostrar uma mensagem para o usuário
+            ctx.fillStyle = 'white';
+            ctx.font = '12px Arial';
+            ctx.fillText("Nenhum arremesso convertido para mostrar no heatmap", 10, 50);
+            return;
+          }
+  
+          // Informações de debug
+          console.log(`Renderizando heatmap de ACERTOS para jogador ID ${this.selectedPlayerId} com ${relevantShots.length} arremessos convertidos`);
+  
+          // Mapa de calor por célula
+          const gridSize = 20;
+          const heatMap = {};
+  
+          relevantShots.forEach(shot => {
+            const px = (shot.x / 100) * width;
+            const py = (shot.y / 100) * height;
+            const gx = Math.floor(px / gridSize);
+            const gy = Math.floor(py / gridSize);
+            const key = `${gx},${gy}`;
+            heatMap[key] = (heatMap[key] || 0) + 1;
+          });
+  
+          // Máximo para normalização
+          const values = Object.values(heatMap);
+          if (values.length === 0) return;
+          
+          const maxHits = Math.max(...values, 1);
+          console.log(`Máximo de arremessos convertidos em uma célula: ${maxHits}`);
+  
+          Object.entries(heatMap).forEach(([key, count]) => {
+            const [gx, gy] = key.split(',').map(Number);
+            const x = gx * gridSize;
+            const y = gy * gridSize;
+            const alpha = count / maxHits;
+  
+            // Usar verde para o heatmap dos acertos
+            ctx.fillStyle = `rgba(76, 175, 80, ${alpha})`; // verde com opacidade proporcional
+            ctx.fillRect(x, y, gridSize, gridSize);
+          });
+          
+          // Adicionar legenda do heatmap
+          ctx.fillStyle = 'white';
+          ctx.font = '12px Arial';
+          ctx.fillText(`Heatmap de ACERTOS: ${this.getPlayerById(this.selectedPlayerId)?.name || 'Jogador'}`, 10, 20);
+        }
+        
+        updateTeamTotalPoints() {
+          let totalPoints = 0;
+          
+          // Soma os pontos de todos os jogadores
+          this.players.forEach(player => {
+            totalPoints += player.stats.points;
+          });
+          
+          document.getElementById('team-total-points').textContent = totalPoints;
+        }
+        
+        // Método para mostrar estatísticas avançadas na modal
+        showAdvancedStats() {
+          // Atualizar estatísticas do jogador selecionado
+          const player = this.getPlayerById(this.selectedPlayerId);
+          if (player) {
+            document.getElementById('modal-player-name').textContent = player.name;
+            
+            // Estatísticas de arremessos para o jogador
+            document.getElementById('modal-player-3pt').textContent = `${player.stats.threePointsMade}/${player.stats.threePointsAttempted}`;
+            document.getElementById('modal-player-2pt').textContent = `${player.stats.twoPointsMade}/${player.stats.twoPointsAttempted}`;
+            document.getElementById('modal-player-1pt').textContent = `${player.stats.freeThrowsMade}/${player.stats.freeThrowsAttempted}`;
+            
+            document.getElementById('modal-player-3pt-pct').textContent = `${player.getThreePointPercentage()}%`;
+            document.getElementById('modal-player-2pt-pct').textContent = `${player.getTwoPointPercentage()}%`;
+            document.getElementById('modal-player-1pt-pct').textContent = `${player.getFreeThrowPercentage()}%`;
+            
+            document.getElementById('modal-player-points').textContent = player.stats.points;
+            document.getElementById('modal-player-rebounds').textContent = player.stats.rebounds;
+            document.getElementById('modal-player-assists').textContent = player.stats.assists;
+            
+            // Criar gráfico de eficiência do jogador
+            this.renderPlayerEfficiencyChart(player);
+          }
+          
+          // Estatísticas do time
+          const teamStats = this.calculateTeamStats();
+          document.getElementById('modal-team-3pt').textContent = `${teamStats.threePointsMade}/${teamStats.threePointsAttempted}`;
+          document.getElementById('modal-team-2pt').textContent = `${teamStats.twoPointsMade}/${teamStats.twoPointsAttempted}`;
+          document.getElementById('modal-team-1pt').textContent = `${teamStats.freeThrowsMade}/${teamStats.freeThrowsAttempted}`;
+          
+          const team3ptPct = teamStats.threePointsAttempted > 0 ? Math.round((teamStats.threePointsMade / teamStats.threePointsAttempted) * 100) : 0;
+          const team2ptPct = teamStats.twoPointsAttempted > 0 ? Math.round((teamStats.twoPointsMade / teamStats.twoPointsAttempted) * 100) : 0;
+          const teamFtPct = teamStats.freeThrowsAttempted > 0 ? Math.round((teamStats.freeThrowsMade / teamStats.freeThrowsAttempted) * 100) : 0;
+          
+          document.getElementById('modal-team-3pt-pct').textContent = `${team3ptPct}%`;
+          document.getElementById('modal-team-2pt-pct').textContent = `${team2ptPct}%`;
+          document.getElementById('modal-team-1pt-pct').textContent = `${teamFtPct}%`;
+          
+          document.getElementById('modal-team-points').textContent = teamStats.points;
+          document.getElementById('modal-team-rebounds').textContent = teamStats.rebounds;
+          document.getElementById('modal-team-assists').textContent = teamStats.assists;
+          
+          // Criar gráfico de contribuição por jogador
+          this.renderTeamPointsChart();
+          
+          // Mostrar a modal
+          document.getElementById('stats-modal').style.display = 'flex';
+        }
+        
+        // Calcula as estatísticas totais do time
+        calculateTeamStats() {
+          const teamStats = {
+            points: 0,
+            rebounds: 0,
+            assists: 0,
+            turnovers: 0,
+            threePointsMade: 0,
+            threePointsAttempted: 0,
+            twoPointsMade: 0,
+            twoPointsAttempted: 0,
+            freeThrowsMade: 0,
+            freeThrowsAttempted: 0
+          };
+          
+          this.players.forEach(player => {
+            teamStats.points += player.stats.points;
+            teamStats.rebounds += player.stats.rebounds;
+            teamStats.assists += player.stats.assists;
+            teamStats.turnovers += player.stats.turnovers;
+            teamStats.threePointsMade += player.stats.threePointsMade;
+            teamStats.threePointsAttempted += player.stats.threePointsAttempted;
+            teamStats.twoPointsMade += player.stats.twoPointsMade;
+            teamStats.twoPointsAttempted += player.stats.twoPointsAttempted;
+            teamStats.freeThrowsMade += player.stats.freeThrowsMade;
+            teamStats.freeThrowsAttempted += player.stats.freeThrowsAttempted;
+          });
+          
+          return teamStats;
+        }
+        // Simula a renderização de um gráfico de eficiência do jogador
+      renderPlayerEfficiencyChart(player) {
+        const graphContainer = document.getElementById('player-efficiency-graph');
+        graphContainer.innerHTML = '';
+        
+        // Criar um gráfico simples de barras horizontais para arremessos
+        const graphHtml = `
+          <div style="width: 100%; padding: 10px;">
+            <div style="display: flex; align-items: center; margin-bottom: 15px;">
+              <div style="width: 80px; text-align: right; padding-right: 10px;">3 Pontos:</div>
+              <div style="flex-grow: 1; background-color: #eee; height: 20px; border-radius: 10px; overflow: hidden;">
+                <div style="width: ${player.getThreePointPercentage()}%; height: 100%; background-color: #2196f3;"></div>
+              </div>
+              <div style="width: 50px; padding-left: 10px;">${player.getThreePointPercentage()}%</div>
+            </div>
+            <div style="display: flex; align-items: center; margin-bottom: 15px;">
+              <div style="width: 80px; text-align: right; padding-right: 10px;">2 Pontos:</div>
+              <div style="flex-grow: 1; background-color: #eee; height: 20px; border-radius: 10px; overflow: hidden;">
+                <div style="width: ${player.getTwoPointPercentage()}%; height: 100%; background-color: #4caf50;"></div>
+              </div>
+              <div style="width: 50px; padding-left: 10px;">${player.getTwoPointPercentage()}%</div>
+            </div>
+            <div style="display: flex; align-items: center;">
+              <div style="width: 80px; text-align: right; padding-right: 10px;">Lance Livre:</div>
+              <div style="flex-grow: 1; background-color: #eee; height: 20px; border-radius: 10px; overflow: hidden;">
+                <div style="width: ${player.getFreeThrowPercentage()}%; height: 100%; background-color: #ff9800;"></div>
+              </div>
+              <div style="width: 50px; padding-left: 10px;">${player.getFreeThrowPercentage()}%</div>
+            </div>
+          </div>
+        `;
+        
+        graphContainer.innerHTML = graphHtml;
+      }
+      
+      // Simula a renderização de um gráfico de contribuição de pontos por jogador
+      renderTeamPointsChart() {
+        const graphContainer = document.getElementById('team-points-graph');
+        graphContainer.innerHTML = '';
+        
+        // Ordenar os jogadores por pontos (do maior para o menor)
+        const sortedPlayers = [...this.players].sort((a, b) => b.stats.points - a.stats.points);
+        
+        // Calcular total de pontos da equipe para porcentagens
+        const totalTeamPoints = sortedPlayers.reduce((sum, player) => sum + player.stats.points, 0);
+        
+        // Criar um gráfico de barras horizontais para contribuição de pontos
+        let graphHtml = `<div style="width: 100%; padding: 10px;">`;
+        
+        sortedPlayers.forEach(player => {
+          if (player.stats.points === 0) return; // Pular jogadores sem pontos
+          
+          const contributionPct = totalTeamPoints ? Math.round((player.stats.points / totalTeamPoints) * 100) : 0;
+          
+          graphHtml += `
+            <div style="display: flex; align-items: center; margin-bottom: 15px;">
+              <div style="width: 80px; text-align: right; padding-right: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${player.name}">
+                ${player.name}:
+              </div>
+              <div style="flex-grow: 1; background-color: #eee; height: 20px; border-radius: 10px; overflow: hidden;">
+                <div style="width: ${contributionPct}%; height: 100%; background-color: #5e35b1;"></div>
+              </div>
+              <div style="width: 80px; padding-left: 10px;">${player.stats.points} pts (${contributionPct}%)</div>
+            </div>
+          `;
+        });
+        
+        graphHtml += `</div>`;
+        
+        graphContainer.innerHTML = totalTeamPoints ? graphHtml : '<div style="padding: 20px; text-align: center;">Nenhum ponto registrado ainda</div>';
+      }
+      
+      initEventListeners() {
+        // Eventos para o menu de configurações
+        document.getElementById('menu-button').addEventListener('click', () => {
+          document.getElementById('menu-container').style.display = 'block';
+        });
+        
+        document.getElementById('menu-close').addEventListener('click', () => {
+          document.getElementById('menu-container').style.display = 'none';
+        });
+        
+        // Eventos para estatísticas avançadas
+        document.getElementById('show-advanced-stats').addEventListener('click', () => {
+          this.showAdvancedStats();
+        });
+        
+        document.getElementById('stats-modal-close').addEventListener('click', () => {
+          document.getElementById('stats-modal').style.display = 'none';
+        });
+        
+        // Abas de estatísticas avançadas
+        document.getElementById('tab-player').addEventListener('click', () => {
+          document.getElementById('tab-player').classList.add('active');
+          document.getElementById('tab-team').classList.remove('active');
+          document.getElementById('player-stats-section').style.display = 'block';
+          document.getElementById('team-stats-section').style.display = 'none';
+        });
+        
+        document.getElementById('tab-team').addEventListener('click', () => {
+          document.getElementById('tab-team').classList.add('active');
+          document.getElementById('tab-player').classList.remove('active');
+          document.getElementById('team-stats-section').style.display = 'block';
+          document.getElementById('player-stats-section').style.display = 'none';
+        });
+        
+        // Botões para limpar dados
+        document.getElementById('clear-stats').addEventListener('click', () => {
+          if (confirm('Tem certeza que deseja limpar todas as estatísticas e arremessos? Esta ação não pode ser desfeita.')) {
+            this.clearStatistics();
+          }
+        });
+        
+        document.getElementById('clear-all').addEventListener('click', () => {
+          if (confirm('Tem certeza que deseja limpar TUDO (jogadores, estatísticas e arremessos)? Esta ação não pode ser desfeita.')) {
+            this.clearAll();
+          }
+        });
+        
+        // Eventos para todas as funcionalidades especiais
+        document.getElementById('replay-shots').addEventListener('click', () => {
+          this.replayShots();
+          document.getElementById('menu-container').style.display = 'none';
+        });
+
+        document.getElementById('add-player-btn').addEventListener('click', () => {
+          this.addPlayer();
+        });
+
+        document.getElementById('undo-shot').addEventListener('click', () => {
+          document.getElementById('modal-cancel').style.display = 'flex';
+        });
+
+        // Adicionar eventos para fechar o modal
+        document.querySelector('.modal-cancel-close').addEventListener('click', () => {
+          document.getElementById('modal-cancel').style.display = 'none';
+        });
+
+        // Fechar modal se clicar fora
+        document.getElementById('modal-cancel').addEventListener('click', (e) => {
+          if (e.target === document.getElementById('modal-cancel')) {
+            document.getElementById('modal-cancel').style.display = 'none';
+          }
+        });
+
+        // Adicionar eventos para os botões de cancelamento
+        document.getElementById('cancel-shot').addEventListener('click', () => {
+          basketballApp.undoLastShot();
+          document.getElementById('modal-cancel').style.display = 'none';
+        });
+
+        document.getElementById('cancel-rebound').addEventListener('click', () => {
+          basketballApp.undoStat('rebounds');
+          document.getElementById('modal-cancel').style.display = 'none';
+        });
+
+        document.getElementById('cancel-assist').addEventListener('click', () => {
+          basketballApp.undoStat('assists');
+          document.getElementById('modal-cancel').style.display = 'none';
+        });
+
+        document.getElementById('cancel-turnover').addEventListener('click', () => {
+          basketballApp.undoStat('turnovers');
+          document.getElementById('modal-cancel').style.display = 'none';
+        });
+
+        document.getElementById('cancel-freethrow').addEventListener('click', () => {
+          basketballApp.undoFreeThrow();
+          document.getElementById('modal-cancel').style.display = 'none';
+        });
+        document.getElementById('export-json').addEventListener('click', () => {
+          this.exportDataAsJSON();
+          document.getElementById('menu-container').style.display = 'none';
+        });
+        
+        document.getElementById('export-csv').addEventListener('click', () => {
+          this.exportDataAsCSV();
+          document.getElementById('menu-container').style.display = 'none';
+        });
+        
+        document.getElementById('toggle-heatmap').addEventListener('click', () => {
+          this.toggleHeatmap();
+          document.getElementById('menu-container').style.display = 'none';
+        });
+        
+        // Selecionar jogador na lista lateral
+        document.getElementById('player-list').addEventListener('click', (e) => {
+          const playerItem = e.target.closest('.player-item');
+          if (playerItem && !e.target.closest('.player-actions')) {
+            this.selectPlayer(parseInt(playerItem.dataset.id));
+          }
+        });
+        
+        // Botões de estatísticas rápidas
+        document.querySelectorAll('.stat-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const stat = btn.dataset.stat;
+            const value = btn.dataset.value ? parseInt(btn.dataset.value) : 1;
+            this.updateStat(stat, value);
+          });
+        });
+        
+        // Registrar arremesso na quadra (abre a modal)
+        document.getElementById('court').addEventListener('click', (e) => {
+          this.recordShotPosition(e);
+          // Abrir a modal de confirmação
+          document.getElementById('shot-modal').style.display = 'flex';
+        });
+        
+        // Botões da modal de arremesso
+        document.getElementById('shot-made').addEventListener('click', () => {
+          this.setShotResult(true);
+          document.getElementById('shot-modal').style.display = 'none';
+        });
+        
+        document.getElementById('shot-missed').addEventListener('click', () => {
+          this.setShotResult(false);
+          document.getElementById('shot-modal').style.display = 'none';
+        });
+        
+        // Fechar a modal se clicar fora dela
+        document.getElementById('shot-modal').addEventListener('click', (e) => {
+          if (e.target === document.getElementById('shot-modal')) {
+            document.getElementById('shot-modal').style.display = 'none';
+          }
+        });
+        
+        document.getElementById('stats-modal').addEventListener('click', (e) => {
+          if (e.target === document.getElementById('stats-modal')) {
+            document.getElementById('stats-modal').style.display = 'none';
+          }
+        });
+        
+        // Ajustar o canvas quando a janela for redimensionada
+        window.addEventListener('resize', () => {
+          const court = document.getElementById('court');
+          const canvas = document.getElementById('court-canvas');
+          if (canvas) {
+            canvas.width = court.clientWidth;
+            canvas.height = court.clientHeight;
+            this.drawCourt(canvas);
+            this.updateShotDisplay(); // Redesenhar os arremessos
+          }
+        });
+      }
+      
+      toggleHeatmap() {
+        this.showingHeatmap = !this.showingHeatmap;
+        
+        // Primeiro, limpar a quadra de todos os pontos de arremesso
+        document.querySelectorAll('.shot-dot').forEach(dot => {
+          dot.remove();
+        });
+        
+        // Redesenhar a quadra e o heatmap (se necessário)
+        const canvas = document.getElementById('court-canvas');
+        this.drawCourt(canvas);
+        
+        // Se estiver desativando o heatmap, mostrar os arremessos do jogador selecionado
+        if (!this.showingHeatmap) {
+          this.updateShotDisplay();
+        }
+        
+        // Mostrar mensagem informativa
+        const shotTypeElem = document.getElementById('shot-type');
+        if (this.showingHeatmap) {
+          shotTypeElem.textContent = 'Heatmap de ACERTOS ativado para o jogador selecionado';
+        } else {
+          shotTypeElem.textContent = 'Clique na quadra para registrar um arremesso';
+        }
+      }
+      
+      replayShots() {
+        const court = document.getElementById('court');
+        const canvas = document.getElementById('court-canvas');
+        const ctx = canvas.getContext('2d');
+
+        const shots = this.shots.filter(s => s.playerId === this.selectedPlayerId);
+        if (shots.length === 0) {
+          alert('Nenhum arremesso para reproduzir.');
+          return;
+        }
+
+        // Reset
+        document.querySelectorAll('.shot-dot').forEach(dot => dot.remove());
+        this.drawCourt(canvas);
+
+        let i = 0;
+        const interval = setInterval(() => {
+          if (i >= shots.length) {
+            clearInterval(interval);
+            document.getElementById('shot-type').textContent = 'Replay concluído.';
+            return;
+          }
+
+          const shot = shots[i];
+          this.drawShot(shot);
+          document.getElementById('shot-type').innerHTML = `Replay: Arremesso ${i + 1} de <strong>${shots.length}</strong>`;
+          i++;
+        }, 600); // 600ms por arremesso
+      }
+      
+      addPlayer() {
+        const nameInput = document.getElementById('player-name');
+        const numberInput = document.getElementById('player-number');
+        const positionInput = document.getElementById('player-position');
+        
+        const name = nameInput.value.trim();
+        const number = parseInt(numberInput.value);
+        const position = positionInput.value;
+        
+        if (name && !isNaN(number)) {
+          const newPlayer = new Player(this.nextPlayerId++, name, number, position);
+          this.players.push(newPlayer);
+          this.updatePlayerList();
+          this.selectPlayer(newPlayer.id);
+          
+          // Limpar inputs
+          nameInput.value = '';
+          numberInput.value = '';
+          positionInput.value = 'PG';
+          
+          // Salvar no localStorage
+          this.saveToLocalStorage();
+        }
+      }
+      
+      selectPlayer(playerId) {
+        this.selectedPlayerId = playerId;
+        this.updatePlayerList();
+        this.updatePlayerStats();
+        
+        // Limpar todos os pontos de arremesso da visualização
+        document.querySelectorAll('.shot-dot').forEach(dot => {
+          dot.remove();
+        });
+        
+        // Se estiver mostrando o heatmap, redesenhar com os dados do novo jogador
+        if (this.showingHeatmap) {
+          const canvas = document.getElementById('court-canvas');
+          this.drawCourt(canvas);
+        } else {
+          // Mostrar apenas os arremessos do jogador selecionado
+          this.shots
+            .filter(shot => shot.playerId === this.selectedPlayerId)
+            .forEach(shot => this.drawShot(shot));
+        }
+        
+        // Atualizar mensagem na tela
+        document.getElementById('shot-type').textContent = 'Jogador alterado. Clique na quadra para registrar um arremesso';
+        
+        // Salvar no localStorage
+        this.saveToLocalStorage();
+      }
+      
+      updatePlayerList() {
+        const playerList = document.getElementById('player-list');
+        playerList.innerHTML = '';
+        
+        this.players.forEach(player => {
+          const playerItem = document.createElement('div');
+          playerItem.className = `player-item ${player.id === this.selectedPlayerId ? 'selected' : ''}`;
+          playerItem.dataset.id = player.id;
+          
+          // Criar elemento para o texto do jogador
+          const playerInfoText = document.createElement('div');
+          playerInfoText.className = 'player-info-text';
+          playerInfoText.innerHTML = `<strong>#${player.number}</strong> ${player.name} - ${player.position}`;
+          playerItem.appendChild(playerInfoText);
+          
+          // Adicionar botões de editar e excluir
+          const playerActions = document.createElement('div');
+          playerActions.className = 'player-actions';
+          
+          const editBtn = document.createElement('button');
+          editBtn.className = 'player-edit-btn';
+          editBtn.textContent = '✏️';
+          editBtn.title = 'Editar jogador';
+          editBtn.onclick = (e) => {
+            e.stopPropagation(); // Evitar que o clique selecione o jogador
+            this.editPlayer(player.id);
+          };
+          
+          const deleteBtn = document.createElement('button');
+          deleteBtn.className = 'player-delete-btn';
+          deleteBtn.textContent = '❌';
+          deleteBtn.title = 'Excluir jogador';
+          deleteBtn.onclick = (e) => {
+            e.stopPropagation(); // Evitar que o clique selecione o jogador
+            this.deletePlayer(player.id);
+          };
+          
+          playerActions.appendChild(editBtn);
+          playerActions.appendChild(deleteBtn);
+          playerItem.appendChild(playerActions);
+          
+          playerList.appendChild(playerItem);
+        });
+      }
+      
+      editPlayer(playerId) {
+        const player = this.getPlayerById(playerId);
+        if (!player) return;
+        
+        // Criar um prompt para editar o nome
+        const newName = prompt('Editar nome do jogador:', player.name);
+        if (newName !== null && newName.trim() !== '') {
+          player.name = newName.trim();
+        }
+        
+        // Criar um prompt para editar o número
+        const newNumberStr = prompt('Editar número do jogador:', player.number);
+        if (newNumberStr !== null) {
+          const newNumber = parseInt(newNumberStr);
+          if (!isNaN(newNumber)) {
+            player.number = newNumber;
+          }
+        }
+        
+        // Criar um prompt para editar a posição
+        const positions = ['PG', 'SG', 'SF', 'PF', 'C'];
+        const posIndex = positions.indexOf(player.position);
+        const options = positions.map((pos, index) => 
+          `${index === posIndex ? '→ ' : ''}${index + 1}. ${pos}`
+        ).join('\n');
+        
+        const newPosStr = prompt(`Selecione a posição do jogador (1-5):\n${options}`, posIndex + 1);
+        if (newPosStr !== null) {
+          const newPosIndex = parseInt(newPosStr) - 1;
+          if (!isNaN(newPosIndex) && newPosIndex >= 0 && newPosIndex < positions.length) {
+            player.position = positions[newPosIndex];
+          }
+        }
+        
+        // Atualizar a interface
+        this.updatePlayerList();
+        if (player.id === this.selectedPlayerId) {
+          this.updatePlayerStats();
+        }
+        
+        // Salvar no localStorage
+        this.saveToLocalStorage();
+      }
+      
+      deletePlayer(playerId) {
+        // Confirmar exclusão
+        const player = this.getPlayerById(playerId);
+        if (!player) return;
+        
+        if (!confirm(`Tem certeza que deseja excluir o jogador ${player.name}?`)) {
+          return;
+        }
+        
+        // Remover o jogador do array
+        this.players = this.players.filter(p => p.id !== playerId);
+        
+        // Se o jogador excluído era o selecionado, selecionar outro
+        if (playerId === this.selectedPlayerId) {
+          this.selectedPlayerId = this.players.length > 0 ? this.players[0].id : null;
+        }
+        
+        // Atualizar a interface
+        this.updatePlayerList();
+        this.updatePlayerStats();
+        this.updateShotDisplay();
+        
+        // Salvar no localStorage
+        this.saveToLocalStorage();
+      }
+      
+      updatePlayerStats() {
+        const player = this.getPlayerById(this.selectedPlayerId);
+        if (!player) return;
+        
+        // Estatísticas básicas
+        document.getElementById('stats-player-name').textContent = player.name;
+        document.getElementById('stats-player-number').textContent = player.number;
+        document.getElementById('stats-points').textContent = player.stats.points;
+        document.getElementById('stats-rebounds').textContent = player.stats.rebounds;
+        document.getElementById('stats-assists').textContent = player.stats.assists;
+        document.getElementById('stats-turnovers').textContent = player.stats.turnovers;
+        
+        // Estatísticas detalhadas de arremessos
+        document.getElementById('stats-3pt-made').textContent = player.stats.threePointsMade;
+        document.getElementById('stats-2pt-made').textContent = player.stats.twoPointsMade;
+        document.getElementById('stats-1pt-made').textContent = player.stats.freeThrowsMade;
+        
+        document.getElementById('stats-3pt-missed').textContent = player.stats.threePointsAttempted - player.stats.threePointsMade;
+        document.getElementById('stats-2pt-missed').textContent = player.stats.twoPointsAttempted - player.stats.twoPointsMade;
+        document.getElementById('stats-1pt-missed').textContent = player.stats.freeThrowsAttempted - player.stats.freeThrowsMade;
+      }
+      
+      updateStat(stat, value) {
+        const player = this.getPlayerById(this.selectedPlayerId);
+        if (!player) return;
+        
+        // Para lances livres, usamos um tratamento especial
+        if (stat === 'points' && value === 1) {
+          // Lance livre convertido
+          this.addFreeThrow(true);
+          return;
+        }
+        
+        // Para as outras estatísticas
+        if (player.stats.hasOwnProperty(stat)) {
+          player.stats[stat] += value;
+          this.updatePlayerStats();
+          this.updateTeamTotalPoints();
+          this.updateDetailedStatistics();
+          this.saveToLocalStorage();
+        }
+      }
+      
+      // Variáveis temporárias para armazenar a posição do arremesso atual
+      tempShotX = null;
+      tempShotY = null;
+      
+      // Registra a posição do arremesso e verifica o tipo
+      recordShotPosition(e) {
+        const court = document.getElementById('court');
+        const rect = court.getBoundingClientRect();
+        
+        // Calcular posição relativa
+        this.tempShotX = ((e.clientX - rect.left) / rect.width) * 100;
+        this.tempShotY = ((e.clientY - rect.top) / rect.height) * 100;
+        
+        // Criar uma marca temporária para visualizar onde o arremesso será registrado
+        this.showTempShotMarker(this.tempShotX, this.tempShotY);
+        
+        // Verificar se é um arremesso de 3 pontos baseado na linha de 3 pontos
+        const isThreePointer = this.isThreePointShot(this.tempShotX, this.tempShotY);
+        
+        // Mostrar mensagem sobre o tipo de arremesso na modal
+        const modalTitle = document.getElementById('modal-shot-type');
+        if (isThreePointer) {
+          modalTitle.innerHTML = `Arremesso de <span style="color: #2196f3; font-weight: bold;">3 pontos</span>`;
+        } else {
+          modalTitle.innerHTML = `Arremesso de <span style="color: #4caf50; font-weight: bold;">2 pontos</span>`;
+        }
+      }
+      
+      // Adiciona um marcador temporário para mostrar onde o arremesso será registrado
+      showTempShotMarker(x, y) {
+        // Remover qualquer marcador temporário anterior
+        const oldMarker = document.getElementById('temp-shot-marker');
+        if (oldMarker) oldMarker.remove();
+        
+        const court = document.getElementById('court');
+        const marker = document.createElement('div');
+        marker.id = 'temp-shot-marker';
+        marker.style.position = 'absolute';
+        marker.style.left = `${x}%`;
+        marker.style.top = `${y}%`;
+        marker.style.width = '12px';
+        marker.style.height = '12px';
+        marker.style.borderRadius = '50%';
+        marker.style.border = '2px solid black';
+        marker.style.backgroundColor = 'yellow';
+        marker.style.transform = 'translate(-50%, -50%)';
+        marker.style.zIndex = '100';
+        
+        court.appendChild(marker);
+      }
+      
+      isThreePointShot(x, y) {
+        // Usar o contexto do canvas para determinar se o arremesso é de 3 pontos
+        const canvas = document.getElementById('court-canvas');
+        const width = canvas.width;
+        const height = canvas.height;
+        
+        // Converter coordenadas relativas (%) para pixels no canvas
+        const shotX = (x / 100) * width;
+        const shotY = (y / 100) * height;
+        
+        // Obter coordenadas do centro do aro
+        const hoopX = width / 2;
+        const hoopY = height - 10; // 10px do fundo
+        
+        // Raio da linha de 3 pontos em pixels
+        const threePointRadius = width * 0.44; // 44% da largura do canvas
+        
+        // Calcular distância do ponto de arremesso até o aro
+        const distance = Math.sqrt(
+          Math.pow(shotX - hoopX, 2) + 
+          Math.pow(shotY - hoopY, 2)
+        );
+        
+        // Se a distância for maior que o raio da linha de 3 pontos, é um arremesso de 3
+        return distance > threePointRadius;
+      }
+
+      setShotResult(made) {
+        if (this.tempShotX === null || this.tempShotY === null) {
+          alert("Selecione primeiro onde o arremesso foi realizado na quadra");
+          return;
+        }
+        
+        const player = this.getPlayerById(this.selectedPlayerId);
+        if (!player) return;
+        
+        // Verificar se é um arremesso de 3 pontos baseado na distância do aro
+        const isThreePointer = this.isThreePointShot(this.tempShotX, this.tempShotY);
+        
+        // Determinar o valor do arremesso
+        const shotValue = isThreePointer ? 3 : 2;
+        
+        // Criar o novo arremesso
+        const newShot = new Shot(
+          this.nextShotId++,
+          this.selectedPlayerId,
+          this.tempShotX,
+          this.tempShotY,
+          made,
+          shotValue
+        );
+        
+        this.shots.push(newShot);
+        
+        // Atualizar estatísticas detalhadas do jogador
+        if (shotValue === 3) {
+          // Arremesso de 3 pontos
+          player.stats.threePointsAttempted++;
+          if (made) {
+            player.stats.threePointsMade++;
+            player.stats.points += 3;
+          }
+        } else if (shotValue === 2) {
+          // Arremesso de 2 pontos
+          player.stats.twoPointsAttempted++;
+          if (made) {
+            player.stats.twoPointsMade++;
+            player.stats.points += 2;
+          }
+        }
+        
+        // Atualizar a interface
+        this.updatePlayerStats();
+        this.updateTeamTotalPoints();
+        this.updateDetailedStatistics(); // Atualizar estatísticas detalhadas
+        
+        // Remover o marcador temporário
+        const oldMarker = document.getElementById('temp-shot-marker');
+        if (oldMarker) oldMarker.remove();
+        
+        // Desenhar o arremesso na quadra
+        this.drawShot(newShot);
+        
+        // Exibir mensagem sobre o arremesso com cores
+        const shotTypeElem = document.getElementById('shot-type');
+        if (isThreePointer) {
+          shotTypeElem.innerHTML = made ? 
+            '<span style="color: #2196f3; font-weight: bold;">3 pontos</span> ✓' :
+            '<span style="color: #2196f3; font-weight: bold;">3 pontos</span> ✗';
+        } else {
+          shotTypeElem.innerHTML = made ? 
+            '<span style="color: #4caf50; font-weight: bold;">2 pontos</span> ✓' :
+            '<span style="color: #4caf50; font-weight: bold;">2 pontos</span> ✗';
+        }
+        
+        // Limpar variáveis temporárias
+        this.tempShotX = null;
+        this.tempShotY = null;
+        
+        // Salvar no localStorage
+        this.saveToLocalStorage();
+      }
+      
+      // Novo método para lances livres
+      addFreeThrow(made) {
+        const player = this.getPlayerById(this.selectedPlayerId);
+        if (!player) return;
+        
+        // Atualizar estatísticas
+        player.stats.freeThrowsAttempted++;
+        if (made) {
+          player.stats.freeThrowsMade++;
+          player.stats.points += 1;
+        }
+        
+        // Atualizar interface
+        this.updatePlayerStats();
+        this.updateTeamTotalPoints();
+        this.updateDetailedStatistics();
+        
+        // Salvar no localStorage
+        this.saveToLocalStorage();
+      }
+      
+      // Atualizar estatísticas detalhadas
+      updateDetailedStatistics() {
+        // Este método é executado após cada atualização de estatísticas
+        // para manter os painéis detalhados atualizados
+        
+        // Se a modal de estatísticas estiver aberta, atualizá-la
+        if (document.getElementById('stats-modal').style.display === 'flex') {
+          this.showAdvancedStats();
+        }
+      }
+      
+      drawShot(shot) {
+        const court = document.getElementById('court');
+        
+        const shotDot = document.createElement('div');
+        
+        // Garantir que as cores dos arremessos estejam corretas:
+        // Azul para 3 pontos feitos
+        // Verde para 2 pontos feitos
+        // Vermelho para erros
+        let shotClass = '';
+        if (shot.made) {
+          shotClass = shot.value === 3 ? 'shot-made-three' : 'shot-made-two';
+        } else {
+          shotClass = 'shot-missed';
+        }
+        
+        shotDot.className = `shot-dot ${shotClass}`;
+        shotDot.style.left = `${shot.x}%`;
+        shotDot.style.top = `${shot.y}%`;
+        
+        // Adicionar um título de tooltip para facilitar a identificação
+        shotDot.title = `${shot.made ? 'Acertou' : 'Errou'} - ${shot.value} pontos`;
+        shotDot.style.zIndex = '20'; // Garantir que fique acima do canvas
+        
+        court.appendChild(shotDot);
+      }
+      
+      updateShotDisplay() {
+        // Limpar todos os arremessos na visualização
+        document.querySelectorAll('.shot-dot').forEach(dot => dot.remove());
+        
+        // Desenhar apenas os arremessos do jogador selecionado
+        this.shots
+          .filter(shot => shot.playerId === this.selectedPlayerId)
+          .forEach(shot => this.drawShot(shot));
+      }
+      
+      undoLastShot() {
+        // Encontrar o último arremesso do jogador atual
+        for (let i = this.shots.length - 1; i >= 0; i--) {
+          if (this.shots[i].playerId === this.selectedPlayerId) {
+            const shot = this.shots.splice(i, 1)[0];
+            const player = this.getPlayerById(shot.playerId);
+            
+            if (player) {
+              // Reverter estatísticas baseadas no tipo de arremesso
+              if (shot.value === 3) {
+                player.stats.threePointsAttempted--;
+                if (shot.made) {
+                  player.stats.threePointsMade--;
+                  player.stats.points -= 3;
+                }
+              } else if (shot.value === 2) {
+                player.stats.twoPointsAttempted--;
+                if (shot.made) {
+                  player.stats.twoPointsMade--;
+                  player.stats.points -= 2;
+                }
+              }
+              
+              // Atualizar interface
+              this.updatePlayerStats();
+              this.updateTeamTotalPoints();
+              this.updateDetailedStatistics();
+            }
+            
+            this.updateShotDisplay();
+            document.getElementById('shot-type').textContent = 'Último arremesso desfeito.';
+            this.saveToLocalStorage();
+            return;
+          }
+        }
+        alert("Nenhum arremesso para desfazer.");
+      }
+      
+      // Método para desfazer uma estatística específica
+      undoStat(statType) {
+        const player = this.getPlayerById(this.selectedPlayerId);
+        if (!player) return;
+        
+        if (player.stats[statType] > 0) {
+          player.stats[statType]--;
+          this.updatePlayerStats();
+          this.updateTeamTotalPoints();
+          this.updateDetailedStatistics();
+          this.saveToLocalStorage();
+          
+          document.getElementById('shot-type').textContent = `Última estatística de ${this.getStatName(statType)} desfeita.`;
+        } else {
+          alert(`Não há estatísticas de ${this.getStatName(statType)} para desfazer.`);
+        }
+      }
+      
+      // Método para desfazer um lance livre
+      undoFreeThrow() {
+        const player = this.getPlayerById(this.selectedPlayerId);
+        if (!player) return;
+        
+        if (player.stats.freeThrowsAttempted > 0) {
+          // Verificar se o último lance livre foi convertido
+          if (player.stats.freeThrowsMade > 0 && 
+              player.stats.freeThrowsMade === player.stats.freeThrowsAttempted) {
+            player.stats.freeThrowsMade--;
+            player.stats.points--;
+          }
+          
+          player.stats.freeThrowsAttempted--;
+          this.updatePlayerStats();
+          this.updateTeamTotalPoints();
+          this.updateDetailedStatistics();
+          this.saveToLocalStorage();
+          
+          document.getElementById('shot-type').textContent = 'Último lance livre desfeito.';
+        } else {
+          alert("Não há lances livres para desfazer.");
+        }
+      }
+      
+      // Método para obter o nome da estatística em português
+      getStatName(statType) {
+        const statNames = {
+          'rebounds': 'rebote',
+          'assists': 'assistência',
+          'turnovers': 'turnover',
+          'points': 'ponto'
+        };
+        
+        return statNames[statType] || statType;
+      }
+      
+      exportDataAsJSON() {
+        const data = {
+          players: this.players,
+          shots: this.shots
+        };
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "estatisticas_basquete.json";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }
+
+      exportDataAsCSV() {
+        let csv = "Jogador,Numero,Posição,Pontos,Rebotes,Assistências,Turnovers,3PT_M,3PT_A,2PT_M,2PT_A,LL_M,LL_A\n";
+        this.players.forEach(p => {
+          csv += `${p.name},${p.number},${p.position},${p.stats.points},${p.stats.rebounds},${p.stats.assists},${p.stats.turnovers},${p.stats.threePointsMade},${p.stats.threePointsAttempted},${p.stats.twoPointsMade},${p.stats.twoPointsAttempted},${p.stats.freeThrowsMade},${p.stats.freeThrowsAttempted}\n`;
+        });
+        csv += "\nArremessos:\nID,JogadorID,X%,Y%,Acertou,Valor\n";
+        this.shots.forEach(s => {
+          csv += `${s.id},${s.playerId},${s.x.toFixed(2)},${s.y.toFixed(2)},${s.made ? 'Sim' : 'Não'},${s.value}\n`;
+        });
+
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "estatisticas_basquete.csv";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }
+      
+      clearStatistics() {
+        // Limpar apenas arremessos e estatísticas, mantendo os jogadores
+        this.shots = [];
+        this.nextShotId = 1;
+        
+        // Zerar todas as estatísticas de jogadores
+        this.players.forEach(player => {
+          player.stats = {
+            points: 0,
+            rebounds: 0,
+            assists: 0,
+            turnovers: 0,
+            threePointsMade: 0,
+            threePointsAttempted: 0,
+            twoPointsMade: 0,
+            twoPointsAttempted: 0,
+            freeThrowsMade: 0,
+            freeThrowsAttempted: 0
+          };
+        });
+        
+        // Atualizar interface
+        document.querySelectorAll('.shot-dot').forEach(dot => {
+          dot.remove();
+        });
+        
+        this.updatePlayerStats();
+        this.updateTeamTotalPoints();
+        this.updateDetailedStatistics();
+        this.saveToLocalStorage();
+        
+        // Fechar o menu
+        document.getElementById('menu-container').style.display = 'none';
+        
+        // Mensagem de confirmação
+        document.getElementById('shot-type').textContent = 'Estatísticas e arremessos foram limpos';
+        alert('Estatísticas e arremessos foram limpos com sucesso!');
+      }
+      
+      clearAll() {
+        // Limpar tudo: jogadores, arremessos e estatísticas
+        this.players = [new Player(1, 'JOGADOR 1', 7, 'PG')];
+        this.shots = [];
+        this.selectedPlayerId = 1;
+        this.nextPlayerId = 2;
+        this.nextShotId = 1;
+        
+        // Atualizar interface
+        document.querySelectorAll('.shot-dot').forEach(dot => {
+          dot.remove();
+        });
+        
+        this.updatePlayerList();
+        this.updatePlayerStats();
+        this.updateTeamTotalPoints();
+        this.updateDetailedStatistics();
+        this.saveToLocalStorage();
+        
+        // Fechar o menu
+        document.getElementById('menu-container').style.display = 'none';
+        
+        // Mensagem de confirmação
+        document.getElementById('shot-type').textContent = 'Todos os dados foram resetados';
+        alert('Todos os dados foram limpos com sucesso!');
+      }
+      
+      getPlayerById(id) {
+        return this.players.find(player => player.id === id);
+      }
+    }
+
+    // Iniciar o aplicativo quando a página carregar
+    document.addEventListener('DOMContentLoaded', () => {
+      window.basketballApp = new BasketballStatsTracker();
+    });
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./service-worker.js')
+        .then(() => console.log("Service Worker registrado!"));
+    }
+
+  </script>
+</body>
+</html>
