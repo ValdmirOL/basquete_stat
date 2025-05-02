@@ -1,0 +1,26 @@
+name: 🚀 Deploy PWA no GitHub Pages
+
+on:
+  push:
+    branches:
+      - main  # Quando você fizer push para 'main', o deploy será acionado
+
+permissions:
+  contents: write  # Necessário para escrever na branch gh-pages
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🧾 Clonar repositório
+        uses: actions/checkout@v3
+
+      - name: 🛠️ Build (se necessário)
+        run: |
+          echo "Nenhum processo de build necessário para HTML puro"
+
+      - name: 📦 Deploy para GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./  # Publica tudo da raiz (ajuste se necessário)
