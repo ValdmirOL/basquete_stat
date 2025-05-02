@@ -1,0 +1,28 @@
+{
+    "name": "Estatisticas Basquete",
+    "version": "1.0",
+    "description": "Aplicativo para rastrear estatísticas de basquete",
+    "author": "Valdmir Lopes",  
+    "short_name": "Basquete_Stat",
+    "start_url": "./index.html",
+    "display": "standalone",
+    "background_color": "#f5f5f5",
+    "theme_color": "#1e88e5",
+    "icons": [
+      {
+        "src": "icon-192.png",
+        "sizes": "192x192",
+        "type": "image/png"
+      },
+      {
+        "src": "icon-512.png",
+        "sizes": "512x512",
+        "type": "image/png"
+      }
+    ],
+    "permissions": [
+        "storage",
+        "notifications"
+    ],
+    "manifest_version": 2
+  }
